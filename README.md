@@ -20,6 +20,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Community mailbox
+
+The floating mailbox is available throughout the site. Messages and image attachments are stored in the Sanity `production` dataset and are publicly visible on the **Correo** tab and at `/correo`. Admin replies are protected by an HTTP-only signed session cookie.
+
+Create `.env.local` in this project root with:
+
+```env
+SANITY_API_TOKEN=your_server_only_sanity_write_token
+BUZON_ADMIN_PASSWORD=your_private_admin_password
+BUZON_SESSION_SECRET=your_random_secret_of_at_least_32_characters
+```
+
+Keep these values out of source control and never use a `NEXT_PUBLIC_` prefix for them. Generate a session secret with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. Configure the same variables in the deployment environment. The Sanity token is used only by server actions; use a token with the minimum permissions needed to create mailbox documents and upload image assets.
+
+The `mailSubmission` schema is defined in `studio-wwlb-webpage/schemaTypes/MailSubmission.ts`. Start the Studio from `studio-wwlb-webpage` to inspect it locally, and deploy the Studio schema when ready so mailbox documents can also be managed there.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
