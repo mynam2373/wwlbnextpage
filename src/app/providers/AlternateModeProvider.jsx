@@ -6,9 +6,19 @@ import { HEART_PROGRESS_STORAGE_KEY, HEART_SHARDS } from '../data/heartShards';
 
 const AlternateModeContext = createContext(null);
 const validShardIds = new Set(HEART_SHARDS.map((shard) => shard.id));
+const DEV_SESSION_STORAGE_KEY = `${HEART_PROGRESS_STORAGE_KEY}-dev-session`;
 
-function readCollectedShardIds() {
+function readCollectedShardIds(devSessionId) {
   try {
+    if (devSessionId) {
+      const previousDevSessionId = window.localStorage.getItem(DEV_SESSION_STORAGE_KEY);
+      if (previousDevSessionId !== devSessionId) {
+        window.localStorage.removeItem(HEART_PROGRESS_STORAGE_KEY);
+        window.localStorage.setItem(DEV_SESSION_STORAGE_KEY, devSessionId);
+        return [];
+      }
+    }
+
     const savedIds = JSON.parse(window.localStorage.getItem(HEART_PROGRESS_STORAGE_KEY) || '[]');
     return Array.isArray(savedIds)
       ? [...new Set(savedIds.filter((id) => validShardIds.has(id)))]
@@ -18,15 +28,15 @@ function readCollectedShardIds() {
   }
 }
 
-export function AlternateModeProvider({ children }) {
+export function AlternateModeProvider({ children, devSessionId }) {
   const router = useRouter();
   const [collectedShardIds, setCollectedShardIds] = useState([]);
   const [hasLoadedProgress, setHasLoadedProgress] = useState(false);
 
   useEffect(() => {
-    setCollectedShardIds(readCollectedShardIds());
+    setCollectedShardIds(readCollectedShardIds(devSessionId));
     setHasLoadedProgress(true);
-  }, []);
+  }, [devSessionId]);
 
   useEffect(() => {
     if (!hasLoadedProgress) return;

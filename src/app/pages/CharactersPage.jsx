@@ -5,7 +5,7 @@ import { FIRST_SHARD_ID } from '../data/heartShards';
 const allCharacters = [...charactersData, ...secondaryCharactersData];
 const emptyImageSlots = [null, null, null, null];
 
-export function CharactersPage({ collectedShardIds = [], onCollectShard }) {
+export function CharactersPage({ collectedShardIds = [], onCollectShard, imageLibrary = [] }) {
   const [activeCategory, setActiveCategory] = useState('principal');
   const [selectedFichas, setSelectedFichas] = useState({});
   const [failedImages, setFailedImages] = useState({});
@@ -62,7 +62,17 @@ export function CharactersPage({ collectedShardIds = [], onCollectShard }) {
           filteredCharacters.map((char) => {
             const currentFichaIndex = selectedFichas[char.id] ?? 0;
             const currentFicha = char.fichas[currentFichaIndex] || char.fichas[0];
-            const images = currentFicha.images?.length ? currentFicha.images : emptyImageSlots;
+            const libraryImage = imageLibrary.find((image) => image.name === currentFicha.imageName)
+              || (char.id === 'lin' && currentFicha.imageName === 'lin'
+                ? imageLibrary.find((image) => image.name.toLowerCase().startsWith('lin '))
+                : undefined);
+            const images = [
+              ...(libraryImage?.url
+                ? [{ src: libraryImage.url, alt: `${char.name} - ${currentFicha.versionLabel}` }]
+                : []),
+              ...(currentFicha.images || []),
+              ...(!libraryImage?.url && !currentFicha.images?.length ? emptyImageSlots : []),
+            ];
 
             return (
               <div

@@ -1,4 +1,3 @@
-// studio-wwlb-webpage/schemaTypes/volume.ts
 export default {
   name: 'volume',
   title: 'Volúmenes de la Novela',

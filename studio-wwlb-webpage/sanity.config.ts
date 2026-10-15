@@ -10,7 +10,23 @@ export default defineConfig({
   projectId: 'vru32lc4',
   dataset: 'production',
 
-  plugins: [structureTool(), visionTool()],
+  plugins: [
+    structureTool({
+      structure: (S) =>
+        S.list()
+          .title('Contenido')
+          .items([
+            S.listItem()
+              .title('Audio general')
+              .child(S.document().schemaType('globalAudio').documentId('globalAudio')),
+            S.documentTypeListItem('siteImage').title('Imágenes generales'),
+            ...S.documentTypeListItems().filter(
+              (item) => !['globalAudio', 'siteImage'].includes(item.getId() || ''),
+            ),
+          ]),
+    }),
+    visionTool(),
+  ],
 
   schema: {
     types: schemaTypes,

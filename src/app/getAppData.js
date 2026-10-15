@@ -1,7 +1,7 @@
 import { sanityClient } from '../sanityClient';
 import { hasMailboxAdminSession, mailboxAdminIsConfigured } from './data/mailboxServer';
 
-export async function getNovelData() {
+export async function getAppData() {
   const query = `{
     "settings": *[_type == "novelSettings"][0]{
       title,
@@ -36,6 +36,21 @@ export async function getNovelData() {
       reply,
       repliedAt,
       replyImage{asset->{_id, url, metadata{dimensions}}, alt}
+    },
+    "globalAudio": *[_type == "globalAudio" && _id == "globalAudio"][0]{
+      "pistas": pistas[]{
+        _key,
+        nombre,
+        tipo,
+        eventos,
+        volumen,
+        "url": archivo.asset->url
+      }
+    },
+    "imageLibrary": *[_type == "siteImage"] | order(name asc){
+      _id,
+      name,
+      "url": image.asset->url
     }
   }`;
 
@@ -45,7 +60,7 @@ export async function getNovelData() {
   ]);
 
   if (!data || !Array.isArray(data.volumes)) {
-    throw new Error('Sanity devolvió una respuesta inválida para la página de novela.');
+    throw new Error('Sanity devolvió una respuesta inválida para los datos de la aplicación.');
   }
 
   return {

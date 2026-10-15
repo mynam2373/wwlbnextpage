@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HomeView } from '../view/HomeView';
 import { VesteriaMap } from '../comp/map/VesteriaMap';
@@ -47,7 +47,7 @@ function FixedCharacterMasks() {
   );
 }
 
-function FragmentSection({ shard, index, poem }) {
+function FragmentSection({ shard, index, poem, onPlaybackChange }) {
   const title = poem?.titulo || shard.title;
 
   return (
@@ -55,16 +55,165 @@ function FragmentSection({ shard, index, poem }) {
       id={`alternate-fragment-${index + 1}`}
       className="flex min-h-[115vh] scroll-mt-8 items-center justify-center px-5 py-16"
     >
-      <SyncedPoem poem={poem} title={title} fragmentNumber={index + 1} />
+      <SyncedPoem
+        poem={poem}
+        title={title}
+        fragmentNumber={index + 1}
+        onPlaybackChange={onPlaybackChange}
+      />
     </section>
   );
 }
 
-export function AlternateModeExperience({ shards, firstPoem, onFinish }) {
+export function AlternateModeExperience({ shards, firstPoem, audioTracks = [], onFinish }) {
   const [isFinaleOpen, setIsFinaleOpen] = useState(false);
+  const audioRef = useRef({
+    background: null,
+    heartbeat: null,
+    click: null,
+    heartbeatTimeout: null,
+    heartbeatInterval: null,
+    resumeTimeout: null,
+    lastClickAt: 0,
+    suspended: false,
+    startAmbient: null,
+  });
+
+  const setPoemPlayback = useCallback((isPlaying) => {
+    const audio = audioRef.current;
+    window.clearTimeout(audio.resumeTimeout);
+
+    if (isPlaying) {
+      audio.suspended = true;
+      window.clearTimeout(audio.heartbeatTimeout);
+      window.clearInterval(audio.heartbeatInterval);
+      audio.heartbeatTimeout = null;
+      audio.heartbeatInterval = null;
+      audio.background?.pause();
+      audio.heartbeat?.pause();
+      audio.click?.pause();
+      return;
+    }
+
+    audio.resumeTimeout = window.setTimeout(() => {
+      audio.suspended = false;
+      audio.startAmbient?.();
+    }, 3000);
+  }, []);
+
+  const playClickEffect = useCallback(() => {
+    const audio = audioRef.current;
+    if (audio.suspended || !audio.click) return;
+
+    const now = Date.now();
+    if (now - audio.lastClickAt < 1000) return;
+    audio.lastClickAt = now;
+    audio.click.currentTime = 0;
+    audio.click.play().catch((error) => {
+      if (error.name !== 'NotAllowedError' && error.name !== 'AbortError') {
+        console.error('No se pudo reproducir el efecto de clic del modo alternativo:', error);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    const backgroundTrack = audioTracks.find((track) =>
+      track.eventos?.includes('ambienteModoAlternativo'),
+    );
+    const heartbeatTrack = audioTracks.find((track) =>
+      track.eventos?.includes('latidoAlternativo'),
+    );
+    const clickTrack = audioTracks.find((track) =>
+      track.eventos?.includes('clicAlternativo'),
+    );
+
+    if (backgroundTrack?.url) {
+      audio.background = new Audio(backgroundTrack.url);
+      audio.background.volume = Math.min(1, Math.max(0, (backgroundTrack.volumen ?? 100) / 100));
+      audio.background.loop = true;
+    } else {
+      console.warn('No hay música configurada para el modo alternativo.');
+    }
+
+    if (heartbeatTrack?.url) {
+      audio.heartbeat = new Audio(heartbeatTrack.url);
+      audio.heartbeat.volume = Math.min(1, Math.max(0, (heartbeatTrack.volumen ?? 100) / 100));
+    } else {
+      console.warn('No hay efecto de latido configurado para el modo alternativo.');
+    }
+
+    if (clickTrack?.url) {
+      audio.click = new Audio(clickTrack.url);
+      audio.click.volume = Math.min(1, Math.max(0, (clickTrack.volumen ?? 100) / 100));
+    } else {
+      console.warn('No hay efecto de clic configurado para el modo alternativo.');
+    }
+
+    const playHeartbeat = () => {
+      if (audio.suspended || !audio.heartbeat) return;
+      audio.heartbeat.currentTime = 0;
+      audio.heartbeat.play().catch((error) => {
+        if (error.name !== 'NotAllowedError' && error.name !== 'AbortError') {
+          console.error('No se pudo reproducir el latido del modo alternativo:', error);
+        }
+      });
+    };
+
+    const startAmbient = () => {
+      if (audio.suspended) return;
+      if (audio.background?.paused) {
+        audio.background.play().catch((error) => {
+            if (error.name !== 'NotAllowedError' && error.name !== 'AbortError') {
+            console.error('No se pudo reproducir el ambiente del modo alternativo:', error);
+          }
+        });
+      }
+      if (audio.heartbeat && audio.heartbeatInterval === null && audio.heartbeatTimeout === null) {
+        audio.heartbeatTimeout = window.setTimeout(() => {
+          audio.heartbeatTimeout = null;
+          playHeartbeat();
+          audio.heartbeatInterval = window.setInterval(playHeartbeat, 1800);
+        }, 2000);
+      }
+    };
+    audio.startAmbient = startAmbient;
+
+    const retryAfterInteraction = () => {
+      startAmbient();
+    };
+    window.addEventListener('pointerdown', retryAfterInteraction);
+    window.addEventListener('keydown', retryAfterInteraction);
+    startAmbient();
+
+    return () => {
+      window.removeEventListener('pointerdown', retryAfterInteraction);
+      window.removeEventListener('keydown', retryAfterInteraction);
+      window.clearTimeout(audio.heartbeatTimeout);
+      window.clearInterval(audio.heartbeatInterval);
+      window.clearTimeout(audio.resumeTimeout);
+      audio.background?.pause();
+      audio.heartbeat?.pause();
+      audio.click?.pause();
+      audio.background = null;
+      audio.heartbeat = null;
+      audio.click = null;
+      audio.heartbeatTimeout = null;
+      audio.heartbeatInterval = null;
+      audio.resumeTimeout = null;
+      audio.startAmbient = null;
+      audio.suspended = false;
+    };
+  }, [audioTracks]);
 
   return (
     <div
+      onClickCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest('[data-alternate-poem-toggle]')) {
+          return;
+        }
+        playClickEffect();
+      }}
       className="relative min-h-screen animate-[alternate-fade-in_900ms_ease-out] overflow-x-clip bg-[#1c1917] text-white"
     >
       <section className="relative flex min-h-screen flex-col items-center px-4 pb-20 pt-20">
@@ -96,6 +245,7 @@ export function AlternateModeExperience({ shards, firstPoem, onFinish }) {
             shard={shard}
             index={index}
             poem={index === 0 ? firstPoem : null}
+            onPlaybackChange={setPoemPlayback}
           />
         ))}
 

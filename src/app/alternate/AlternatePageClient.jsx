@@ -6,7 +6,7 @@ import { AlternateModeExperience } from '../alternate-mode/AlternateModeExperien
 import { HEART_SHARDS } from '../data/heartShards';
 import { useAlternateMode } from '../providers/AlternateModeProvider';
 
-export default function AlternatePageClient({ firstPoem }) {
+export default function AlternatePageClient({ firstPoem, audioTracks = [] }) {
   const router = useRouter();
   const { hasLoadedProgress, isUnlocked, finishAlternateMode } = useAlternateMode();
 
@@ -24,6 +24,7 @@ export default function AlternatePageClient({ firstPoem }) {
     <AlternateModeExperience
       shards={HEART_SHARDS}
       firstPoem={firstPoem}
+      audioTracks={audioTracks}
       onFinish={finishAlternateMode}
     />
   );

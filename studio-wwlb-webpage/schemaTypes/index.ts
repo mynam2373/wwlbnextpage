@@ -1,6 +1,8 @@
 import novelSettings from './NovelSettings'
 import volume from './Volume'
 import mailSubmission from './MailSubmission'
-import audio from './archivosVar'
+import fragment from './Fragment'
+import globalAudio from './GlobalAudio'
+import siteImage from './SiteImage'
 
-export const schemaTypes = [novelSettings, volume, mailSubmission, audio]
+export const schemaTypes = [novelSettings, volume, mailSubmission, fragment, globalAudio, siteImage]

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { TheaterLayout } from './comp/puppets/TheaterLayout';
 import { HomeView } from './view/HomeView';
@@ -11,6 +11,7 @@ import { GamesPage } from './pages/GamesPage';
 import { NovelView } from './view/NovelView';
 import CorreoPage from './pages/correoPage';
 import { BuzonFlotante } from './comp/common/Buzon';
+import { HEART_SHARDS } from './data/heartShards';
 import { useAlternateMode } from './providers/AlternateModeProvider';
 
 const SECRET_WORD = 'elizabeth';
@@ -19,12 +20,13 @@ export default function App({
   initialTab = 'inicio',
   novelSettings,
   volumes = [],
+  globalAudio,
+  imageLibrary = [],
   mailboxSubmissions = [],
   isMailboxAdmin = false,
   mailboxAdminConfigured = false,
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [selectedEntity, setSelectedEntity] = useState(null);
   const typedWord = useRef('');
   const pathname = usePathname();
   const router = useRouter();
@@ -34,6 +36,81 @@ export default function App({
     collectAllShards,
     isUnlocked,
   } = useAlternateMode();
+
+  const playAudioEvent = useCallback((eventName) => {
+    const track = globalAudio?.pistas?.find(
+      (item) => item.tipo === 'efecto' && item.eventos?.includes(eventName),
+    );
+    if (!track) {
+      console.warn(`No hay ningún efecto de audio configurado para el evento "${eventName}".`);
+      return;
+    }
+    if (!track.url) {
+      console.error(`El efecto de audio para el evento "${eventName}" no tiene un archivo cargado.`);
+      return;
+    }
+
+    const audio = new Audio(track.url);
+    audio.volume = Math.min(1, Math.max(0, (track.volumen ?? 100) / 100));
+    audio.play().catch((error) => {
+      console.error(`No se pudo reproducir el efecto de audio "${eventName}":`, error);
+    });
+  }, [globalAudio]);
+
+  useEffect(() => {
+    if (pathname === '/alternate') return undefined;
+
+    const musicTrack = globalAudio?.pistas?.find(
+      (item) => item.tipo === 'musica'
+        && item.eventos?.includes('musicaFondoGeneral')
+        && item.url,
+    );
+    if (!musicTrack) return undefined;
+
+    const audio = new Audio(musicTrack.url);
+    audio.volume = Math.min(1, Math.max(0, (musicTrack.volumen ?? 100) / 100));
+    audio.loop = true;
+    const startPlayback = () => {
+      audio.play()
+        .then(() => {
+          window.removeEventListener('pointerdown', startPlayback);
+          window.removeEventListener('keydown', startPlayback);
+        })
+        .catch((error) => {
+          if (error.name !== 'NotAllowedError') {
+            console.error('No se pudo reproducir la música de fondo:', error);
+          }
+        });
+    };
+
+    window.addEventListener('pointerdown', startPlayback, { once: true });
+    window.addEventListener('keydown', startPlayback, { once: true });
+    startPlayback();
+
+    return () => {
+      window.removeEventListener('pointerdown', startPlayback);
+      window.removeEventListener('keydown', startPlayback);
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [globalAudio, pathname]);
+
+  const handleCollectShard = useCallback((shardId) => {
+    const isKnownShard = HEART_SHARDS.some((shard) => shard.id === shardId);
+    if (!isKnownShard || collectedShardIds.includes(shardId)) {
+      collectShard(shardId);
+      return;
+    }
+
+    const completesLocket = collectedShardIds.length === HEART_SHARDS.length - 1;
+    collectShard(shardId);
+    playAudioEvent(completesLocket ? 'completarLocket' : 'recogerFragmento');
+  }, [collectedShardIds, collectShard, playAudioEvent]);
+
+  const handleCollectAllShards = useCallback(() => {
+    if (!isUnlocked) playAudioEvent('completarLocket');
+    collectAllShards();
+  }, [collectAllShards, isUnlocked, playAudioEvent]);
 
   useEffect(() => {
     if (activeTab !== 'inicio') {
@@ -55,7 +132,7 @@ export default function App({
       typedWord.current = `${typedWord.current}${event.key.toLowerCase()}`.slice(-SECRET_WORD.length);
 
       if (typedWord.current === SECRET_WORD) {
-        collectAllShards();
+        handleCollectAllShards();
         typedWord.current = '';
       }
     };
@@ -65,7 +142,7 @@ export default function App({
       window.removeEventListener('keydown', handleSecretWord);
       typedWord.current = '';
     };
-  }, [activeTab, collectAllShards]);
+  }, [activeTab, handleCollectAllShards]);
 
   const handleLocketClick = () => {
     if (!isUnlocked) return;
@@ -81,13 +158,6 @@ export default function App({
     }
 
     router.push('/alternate');
-  };
-
-  // Función para manejar cuando hacés doble clic o clic en la ficha flotante
-  const handleNavigateToCharacter = (charId) => {
-    setSelectedEntity(null); // Cerramos el emergente flotante
-    setActiveTab('personajes'); // Cambiamos a la pestaña de personajes
-    // Si querés, podés pasar el ID seleccionado a CharacterView vía props si querés enfocar a ese personaje
   };
 
   return (
@@ -107,43 +177,10 @@ export default function App({
 
           {/* Un solo Mapa en el centro */}
           <div className="w-full flex justify-center my-2">
-            <VesteriaMap 
-              onSelectPoint={(point) => setSelectedEntity(point)} 
+            <VesteriaMap
+              imageLibrary={imageLibrary}
             />
           </div>
-
-          {/* Ficha Flotante al seleccionar en Inicio */}
-          {selectedEntity && (
-            <div className="fixed bottom-6 right-6 bg-[#fdf6e3] border-3 border-[#3d291a] p-3 rounded-lg shadow-[4px_4px_0px_#3d291a] z-50 text-[#3d291a] max-w-xs">
-              <div className="flex justify-between items-center gap-4">
-                <span className="font-black text-xs uppercase">
-                  {selectedEntity.name || selectedEntity.title}
-                </span>
-                <button 
-                  onClick={() => setSelectedEntity(null)}
-                  className="text-xs font-bold px-1.5 py-0.5 hover:bg-[#e5be82] rounded border border-[#3d291a]"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              {selectedEntity.role && (
-                <p className="text-[10px] text-[#6b4f38] font-bold mt-1">
-                  Rol: {selectedEntity.role}
-                </p>
-              )}
-
-              {/* Botón para ir directo a la ficha en la sección de Personajes */}
-              {selectedEntity.characterId && (
-                <button
-                  onClick={() => handleNavigateToCharacter(selectedEntity.characterId)}
-                  className="mt-2 w-full text-[10px] font-black uppercase bg-[#3d291a] text-[#fdf6e3] py-1 px-2 rounded hover:bg-[#553c2a] transition-colors"
-                >
-                  Ver Ficha Completa →
-                </button>
-              )}
-            </div>
-          )}
 
         </div>
       )}
@@ -160,7 +197,8 @@ export default function App({
         <div className="w-full px-4 py-6">
           <CharactersPage
             collectedShardIds={collectedShardIds}
-            onCollectShard={collectShard}
+            onCollectShard={handleCollectShard}
+            imageLibrary={imageLibrary}
           />
         </div>
       )}
@@ -170,7 +208,7 @@ export default function App({
         <div className="w-full px-4 py-6">
           <GamesPage
             collectedShardIds={collectedShardIds}
-            onCollectShard={collectShard}
+            onCollectShard={handleCollectShard}
           />
         </div>
       )}

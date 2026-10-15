@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const POEM_VERSES = [
   'Es la primera vez que respiro.',
@@ -56,7 +56,7 @@ const PLACEHOLDER_VERSES = [
   'Y el silencio vuelve a respirar.',
 ];
 
-export function SyncedPoem({ poem, title, fragmentNumber }) {
+export function SyncedPoem({ poem, title, fragmentNumber, onPlaybackChange }) {
   const audioRef = useRef(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -65,6 +65,11 @@ export function SyncedPoem({ poem, title, fragmentNumber }) {
   const [playbackError, setPlaybackError] = useState('');
 
   const verses = poem?.audioUrl ? POEM_VERSES : PLACEHOLDER_VERSES;
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+    audioRef.current.volume = Math.min(1, Math.max(0, (poem?.audioVolume ?? 100) / 100));
+  }, [poem?.audioVolume]);
 
   const restartScroll = () => {
     setScrollRun((run) => run + 1);
@@ -122,11 +127,19 @@ export function SyncedPoem({ poem, title, fragmentNumber }) {
         preload="metadata"
         onPlay={() => {
           setIsPlaying(true);
+          onPlaybackChange?.(true);
         }}
-        onPause={() => setIsPlaying(false)}
-        onEnded={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false);
+          onPlaybackChange?.(false);
+        }}
+        onEnded={() => {
+          setIsPlaying(false);
+          onPlaybackChange?.(false);
+        }}
         onError={() => {
           setIsPlaying(false);
+          onPlaybackChange?.(false);
           setPlaybackError('No se pudo cargar el archivo de audio.');
         }}
       />
@@ -184,6 +197,7 @@ export function SyncedPoem({ poem, title, fragmentNumber }) {
         <div className="order-2 flex flex-col items-center justify-center md:col-start-2 md:row-start-2">
           <button
             type="button"
+            data-alternate-poem-toggle
             onClick={togglePlayback}
             aria-label={isPlaying ? 'Pausar poema' : 'Reproducir poema'}
             aria-pressed={isPlaying}

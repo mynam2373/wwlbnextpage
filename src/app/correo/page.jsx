@@ -1,5 +1,5 @@
 import App from '../App';
-import { getNovelData } from '../getNovelData';
+import { getAppData } from '../getAppData';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +8,11 @@ export default async function CorreoRoute() {
     settings,
     volumes,
     mailboxSubmissions,
+    globalAudio,
+    imageLibrary,
     isMailboxAdmin,
     mailboxAdminConfigured,
-  } = await getNovelData();
+  } = await getAppData();
 
   return (
     <App
@@ -18,6 +20,8 @@ export default async function CorreoRoute() {
       novelSettings={settings}
       volumes={volumes}
       mailboxSubmissions={mailboxSubmissions}
+      globalAudio={globalAudio}
+      imageLibrary={imageLibrary}
       isMailboxAdmin={isMailboxAdmin}
       mailboxAdminConfigured={mailboxAdminConfigured}
     />

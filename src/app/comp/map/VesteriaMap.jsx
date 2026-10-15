@@ -1,8 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export function VesteriaMap({ onSelectPoint, alternateMode = false }) {
+export function VesteriaMap({ imageLibrary = [], alternateMode = false }) {
   const [selectedRegionId, setSelectedRegionId] = useState(null);
   const [showAllLore, setShowAllLore] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState(null);
+
+  useEffect(() => {
+    if (!enlargedImage) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setEnlargedImage(null);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [enlargedImage]);
 
   if (alternateMode) {
     return (
@@ -38,7 +50,7 @@ export function VesteriaMap({ onSelectPoint, alternateMode = false }) {
       strokeColor: '#5c4d44',
       path: 'M 310 132 A 18 18 0 1 1 310 168 A 18 18 0 1 1 310 132 Z',
       points: [
-        { id: 'black_lake', name: 'The Black Lake (El Lago Negro)', desc: 'Vertedero de desechos pesados y sitio de solemnes rituales funerarios.' },
+        { id: 'black_lake', name: 'The Black Lake (El Lago Negro)', desc: 'Vertedero de desechos pesados y sitio de solemnes rituales funerarios.', imageName: 'El Orbe / Ocaso / El Mañana' },
         { id: 'orbe_negro', name: 'El Orbe Negro', desc: 'Masa colosal suspendida en el aire sobre el lago, eje de navegación visual.' }
       ]
     },
@@ -124,6 +136,16 @@ export function VesteriaMap({ onSelectPoint, alternateMode = false }) {
   };
 
   const selectedRegion = regions.find(r => r.id === selectedRegionId);
+  const regionImagePrefixes = {
+    norte: ['grimefield'],
+    sur: ['shiftinghale'],
+    oeste: ['claymoore'],
+    este: ['rymepeak'],
+  }[selectedRegionId] || [];
+  const selectedRegionImages = imageLibrary.filter((image) => (
+    regionImagePrefixes.some((prefix) => image.name.toLowerCase().startsWith(prefix))
+    || selectedRegion?.points.some((point) => point.imageName === image.name)
+  ));
 
   return (
     <div className="w-full flex flex-col items-center max-w-3xl bg-[#2a2118] p-3 rounded-xl border-4 border-[#3d291a] shadow-[8px_8px_0px_#1a1412] text-[#fdf6e3] mb-28">
@@ -192,14 +214,70 @@ export function VesteriaMap({ onSelectPoint, alternateMode = false }) {
             {selectedRegion.points.map((pt) => (
               <div 
                 key={pt.id} 
-                onClick={() => onSelectPoint && onSelectPoint(pt)}
-                className="bg-[#2a2118] p-2 rounded border border-[#553c2a] hover:border-[#e5be82] cursor-pointer transition-colors"
+                className="bg-[#2a2118] p-2 rounded border border-[#553c2a]"
               >
-                <p className="text-xs font-bold text-[#fdf6e3]">{pt.name}</p>
-                <p className="text-[10px] text-[#c2a68c] mt-0.5">{pt.desc}</p>
+                <p className="text-base font-bold text-[#fdf6e3]">{pt.name}</p>
+                <p className="text-sm leading-relaxed text-[#c2a68c] mt-1">{pt.desc}</p>
               </div>
             ))}
           </div>
+          {selectedRegionImages.length > 0 && (
+            <section className="mt-4 border-t border-[#6b4f38] pt-3">
+              <h4 className="mb-2 text-sm font-black uppercase tracking-wide text-[#e5be82]">
+                Imágenes de {selectedRegion.name}
+              </h4>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {selectedRegionImages.map((image) => (
+                  <figure key={image._id} className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setEnlargedImage(image)}
+                      aria-label={`Ampliar imagen: ${image.name}`}
+                      className="group block w-full overflow-hidden rounded border-2 border-[#6b4f38] focus:outline-none focus:ring-2 focus:ring-[#e5be82]"
+                    >
+                      <img
+                        src={image.url}
+                        alt={image.name}
+                        className="aspect-[4/3] w-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    </button>
+                    <figcaption className="mt-1 text-xs font-semibold text-[#d8c3b0]">
+                      {image.name}
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+      {enlargedImage && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={enlargedImage.name}
+          onClick={() => setEnlargedImage(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+        >
+          <button
+            type="button"
+            onClick={() => setEnlargedImage(null)}
+            aria-label="Cerrar imagen ampliada"
+            className="absolute right-4 top-4 rounded border border-white/50 bg-black/70 px-3 py-1 text-2xl font-bold text-white hover:bg-black"
+          >
+            ×
+          </button>
+          <figure className="flex max-h-full max-w-full flex-col items-center">
+            <img
+              src={enlargedImage.url}
+              alt={enlargedImage.name}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[85vh] max-w-full rounded border-2 border-[#e5be82] object-contain"
+            />
+            <figcaption className="mt-2 text-center text-sm font-semibold text-white">
+              {enlargedImage.name}
+            </figcaption>
+          </figure>
         </div>
       )}
 
@@ -217,7 +295,7 @@ export function VesteriaMap({ onSelectPoint, alternateMode = false }) {
           <section>
             <h4 className="text-xs font-black text-[#e5be82] uppercase mb-1">🗺️ El Mundo de Vesteria</h4>
             <p className="text-[#d8c3b0] text-[11px]">
-              Vesteria es un continente cerrado con estructura de Pangea donde biomas drásticamente opuestos coexisten en parches definidos sin superponerse.
+              Vesteria es un continente cerrado con estructura de Pangea donde biomas drásticamente opuestos coexisten en parches definidos sin superponerse del todo.
             </p>
           </section>
 
