@@ -1,21 +1,12 @@
 // HomeView.jsx
 import { useState } from 'react';
-import { PuppetStage } from '../comp/puppets/PuppetStage';
 
-export function HomeView({ onSelectCharacter, onNavigateToCharacter, alternateMode = false }) {
+export function HomeView({ alternateMode = false }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center px-4 pb-20 overflow-hidden">
+    <div className="relative w-full flex flex-col items-center">
       
-      {/* TÍTERES SOLO EN EL INICIO */}
-      {!alternateMode && (
-        <PuppetStage
-          onSelectCharacter={onSelectCharacter}
-          onDoubleClickCharacter={onNavigateToCharacter}
-        />
-      )}
-
       {/* MARQUESINA DEL TÍTULO */}
       <div className={`relative flex flex-col items-center z-20 mt-2 ${alternateMode ? '' : 'animate-sign-swing'}`}>
         <div className="absolute -top-32 left-12 w-0.5 h-32 bg-[#a36a3e] border-r border-[#3d291a] z-0" />

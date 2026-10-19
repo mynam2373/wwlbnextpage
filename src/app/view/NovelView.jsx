@@ -76,10 +76,14 @@ function VisualPanel({ document, label }) {
 
 export function NovelView({ settings: novelSettings, volumes = [] }) {
   const [selectedSection, setSelectedSection] = useState('overview');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [sidebarHeight, setSidebarHeight] = useState(null);
   const sidebarRef = useRef(null);
   const orderedVolumes = [...volumes].sort(compareVolumes);
   const selectedVolume = orderedVolumes.find((volume) => volume._id === selectedSection);
+  const selectedSectionLabel = selectedSection === 'overview'
+    ? 'Mundo e historia'
+    : selectedVolume?.title || (selectedVolume ? `Volumen ${getVolumeNumber(selectedVolume) ?? ''}` : 'Secciones');
 
   useEffect(() => {
     const sidebar = sidebarRef.current;
@@ -143,8 +147,42 @@ export function NovelView({ settings: novelSettings, volumes = [] }) {
         <div className="mx-auto mt-5 h-1 w-20 rounded-full bg-[#a36a3e]" />
       </header>
 
+      <button
+        type="button"
+        aria-expanded={isMobileMenuOpen}
+        aria-controls="novel-sections-menu"
+        onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+        className="flex w-full items-center justify-between rounded-xl border-2 border-[#3d291a] bg-[#ead5ad] p-3 text-left shadow-[3px_3px_0px_rgba(61,41,26,0.24)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a36a3e] lg:hidden"
+      >
+        <span className="min-w-0">
+          <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-[#a36a3e]">
+            Sección actual
+          </span>
+          <span className="mt-0.5 block truncate text-sm font-black uppercase">
+            {selectedSectionLabel}
+          </span>
+        </span>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="ml-3 h-6 w-6 shrink-0 text-[#3d291a]"
+        >
+          {isMobileMenuOpen ? (
+            <path d="M5 5l14 14M19 5L5 19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          ) : (
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          )}
+        </svg>
+      </button>
+
       <div className="grid items-stretch gap-5 lg:grid-cols-[minmax(230px,0.8fr)_minmax(0,2.2fr)]">
-        <aside ref={sidebarRef} aria-label="Secciones de la novela" className="rounded-2xl border-2 border-[#3d291a] bg-[#ead5ad] p-4 shadow-[5px_5px_0px_rgba(61,41,26,0.24)] sm:p-5">
+        <aside
+          id="novel-sections-menu"
+          ref={sidebarRef}
+          aria-label="Secciones de la novela"
+          className={`${isMobileMenuOpen ? 'block' : 'hidden'} rounded-2xl border-2 border-[#3d291a] bg-[#ead5ad] p-4 shadow-[5px_5px_0px_rgba(61,41,26,0.24)] sm:p-5 lg:block`}
+        >
           <div className="mb-4">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#a36a3e]">
               Explorar
@@ -156,7 +194,10 @@ export function NovelView({ settings: novelSettings, volumes = [] }) {
             <button
               type="button"
               aria-current={selectedSection === 'overview' ? 'page' : undefined}
-              onClick={() => setSelectedSection('overview')}
+              onClick={() => {
+                setSelectedSection('overview');
+                setIsMobileMenuOpen(false);
+              }}
               className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a36a3e] ${
                 selectedSection === 'overview'
                   ? 'border-[#3d291a] bg-[#3d291a] text-[#fdf6e3] shadow-[3px_3px_0px_rgba(61,41,26,0.2)]'
@@ -196,7 +237,10 @@ export function NovelView({ settings: novelSettings, volumes = [] }) {
                   key={volume._id}
                   type="button"
                   aria-current={isSelected ? 'page' : undefined}
-                  onClick={() => setSelectedSection(volume._id)}
+                  onClick={() => {
+                    setSelectedSection(volume._id);
+                    setIsMobileMenuOpen(false);
+                  }}
                   className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#a36a3e] ${
                     isSelected
                       ? 'border-[#3d291a] bg-[#3d291a] text-[#fdf6e3] shadow-[3px_3px_0px_rgba(61,41,26,0.2)]'

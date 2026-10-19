@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import calebImage from '../../assets/caleb.png';
 import dahyaImage from '../../assets/dahya.png';
 import isabelImage from '../../assets/isabel.png';
@@ -15,76 +15,63 @@ const puppetImages = {
   zora: zoraImage,
 };
 
-export function PuppetNode({
-  name,
-  role,
-  imageName,
-  side = 'left',
-  onClick,
-  onDoubleClick,
-  isSelected,
-}) {
+export function PuppetNode({ name, role, imageName, side = 'left', isActive }) {
   const imageSrc = puppetImages[imageName];
   const isLeft = side === 'left';
   const [imageFailed, setImageFailed] = useState(false);
-
-  // Estados de animación
-  const [stepX, setStepX] = useState(0); // Pasos en X (-5 a +5)
-  const [isFlipped, setIsFlipped] = useState(false); // Mirar a izq/der
-  const [isJumping, setIsJumping] = useState(false); // Saltito
+  const [stepX, setStepX] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [isJumping, setIsJumping] = useState(false);
 
   useEffect(() => {
-    // Intervalo aleatorio entre 3 y 7 segundos por títere
-    const randomTime = Math.floor(Math.random() * 4000) + 3000;
+    if (!isActive) {
+      return undefined;
+    }
 
+    const randomTime = Math.floor(Math.random() * 4000) + 3000;
+    let jumpTimeout;
     const interval = setInterval(() => {
       const action = Math.random();
 
       if (action < 0.6) {
-        // 60% prob: Dar de -5 a +5 pasos de distancia
         const newStep = Math.floor(Math.random() * 11) - 5;
-        
+
         if (newStep > stepX) {
-          setIsFlipped(true);  // Camina a la derecha
+          setIsFlipped(true);
         } else if (newStep < stepX) {
-          setIsFlipped(false); // Camina a la izquierda
+          setIsFlipped(false);
         }
 
         setStepX(newStep);
       } else if (action < 0.85) {
-        // 25% prob: Saltito artesanal
         setIsJumping(true);
-        setTimeout(() => setIsJumping(false), 400);
+        jumpTimeout = setTimeout(() => setIsJumping(false), 400);
       }
     }, randomTime);
 
-    return () => clearInterval(interval);
-  }, [stepX]);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(jumpTimeout);
+    };
+  }, [isActive, stepX]);
 
-  // Convertimos los pasos en desplazamiento en píxeles
-  const translateXPixels = stepX * 8; 
-return (
-    <div 
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
-      className={`cursor-pointer transition-all duration-200 flex items-center ${
-        isSelected ? 'scale-110' : 'hover:scale-105'
-      } ${isJumping ? '-translate-y-4' : ''}`}
-      style={{ transform: `translateX(${translateXPixels}px)` }}
-    > 
-      {/* 1. VARA LATERAL IZQUIERDA (Sale hacia la pared de la izquierda) */}
+  const translateXPixels = stepX * 8;
+
+  return (
+    <div
+      className="flex items-center transition-transform duration-200"
+      style={{ transform: `translate(${translateXPixels}px, ${isJumping && isActive ? '-1rem' : '0'})` }}
+    >
       {isLeft && (
         <div className="h-2.5 w-12 bg-gradient-to-b from-[#734423] via-[#a36a3e] to-[#4d2d15] border-y-2 border-[#3d291a] shadow-md -mr-2 z-0" />
       )}
 
-      {/* CONTENEDOR PRINCIPAL CON FLIP */}
-      <div 
+      <div
         className={`flex flex-col items-center transition-transform duration-500 z-10 ${
           isFlipped ? '[transform:rotateY(180deg)]' : ''
         }`}
       >
-        {/* CARTÓN BASE */}
-        <div 
+        <div
           className="relative bg-[#d4a373] p-1.5 border-2 border-[#3d291a] shadow-[4px_4px_0px_rgba(0,0,0,0.4)] flex items-center justify-center transition-all"
           style={{
             clipPath: 'polygon(8% 2%, 92% 0%, 98% 88%, 85% 100%, 10% 96%, 0% 12%)',
@@ -92,7 +79,6 @@ return (
         >
           <div className="absolute inset-0 bg-[#c29263] opacity-25 mix-blend-multiply pointer-events-none" />
 
-          {/* ILUSTRACIÓN */}
           {imageFailed || !imageSrc ? (
             <span className="relative z-10 flex h-20 w-20 items-center justify-center text-3xl font-black text-[#3d291a]">
               {name?.charAt(0) || '?'}
@@ -107,8 +93,7 @@ return (
           )}
         </div>
 
-        {/* ETIQUETA DE NOMBRE Y ROL */}
-        <div 
+        <div
           className={`mt-1 bg-[#fdf6e3] border-2 border-[#3d291a] px-2 py-0.5 rounded shadow-[2px_2px_0px_rgba(0,0,0,0.4)] text-center z-20 whitespace-nowrap transition-transform duration-500 ${
             isFlipped ? '[transform:rotateY(180deg)]' : ''
           }`}
@@ -124,7 +109,6 @@ return (
         </div>
       </div>
 
-      {/* 2. VARA LATERAL DERECHA (Sale hacia la pared de la derecha) */}
       {!isLeft && (
         <div className="h-2.5 w-12 bg-gradient-to-b from-[#734423] via-[#a36a3e] to-[#4d2d15] border-y-2 border-[#3d291a] shadow-md -ml-2 z-0" />
       )}

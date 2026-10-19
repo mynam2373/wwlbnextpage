@@ -8,6 +8,7 @@ export function TheaterLayout({
   collectedShardIds,
   isUnlocked = false,
   onLocketClick,
+  puppetOverlay,
 }) {
   const [isCurtainClosing, setIsCurtainClosing] = useState(false);
 
@@ -103,11 +104,11 @@ export function TheaterLayout({
       </div>
 
       {/* HEADER DE BOTONES */}
-      <header className="absolute top-10 left-0 right-0 z-40 flex justify-center gap-2 md:gap-6 pointer-events-auto">
+      <header className="route-navigation absolute top-10 left-0 right-0 z-40 flex justify-start md:justify-center gap-2 md:gap-6 pointer-events-auto overflow-x-auto md:overflow-visible px-2 md:px-0">
         {navItems.map((item, index) => {
           const isActive = activeTab === item.id;
           return (
-            <div key={item.id} className="relative flex flex-col items-center">
+            <div key={item.id} className="relative flex shrink-0 flex-col items-center">
               {/* Cuerdita decorativa superior */}
               <div className="absolute -top-10 w-0.5 h-10 bg-[#a36a3e] border-r border-[#3d291a] pointer-events-none" />
               
@@ -140,6 +141,8 @@ export function TheaterLayout({
       <main className="w-full h-full pt-28 pb-8 px-2 md:px-6 overflow-y-auto box-border">
         {children}
       </main>
+
+      {puppetOverlay}
 
     </div>
   );

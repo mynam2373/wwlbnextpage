@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { TheaterLayout } from './comp/puppets/TheaterLayout';
 import { HomeView } from './view/HomeView';
+import { PuppetStage } from './comp/puppets/PuppetStage';
 import { VesteriaMap } from './comp/map/VesteriaMap';
 
 import { CharactersPage } from './pages/CharactersPage';
@@ -167,10 +168,11 @@ export default function App({
       collectedShardIds={collectedShardIds}
       isUnlocked={isUnlocked}
       onLocketClick={handleLocketClick}
+      puppetOverlay={activeTab === 'inicio' ? <PuppetStage /> : null}
     >
       {/* 1. INICIO */}
       {activeTab === 'inicio' && (
-        <div className="flex flex-col items-center justify-between min-h-[85vh] w-full px-4 py-2">
+        <div className="flex flex-col items-center justify-start min-h-[85vh] w-full px-1 sm:px-4 py-2">
           
           {/* Cartel principal / Título */}
           <HomeView />

@@ -34,6 +34,210 @@
   animation: dropDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+.puppet-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.puppet-stage-display {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.puppet-stage-group {
+  position: absolute;
+  top: 50%;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column !important;
+  align-items: flex-start;
+  gap: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 350ms ease;
+}
+
+.puppet-stage-left {
+  left: 1rem;
+  transform: translate(-120vw, -50%);
+}
+
+.puppet-stage-right {
+  right: 1rem;
+  align-items: flex-end;
+  transform: translate(120vw, -50%);
+}
+
+.puppet-stage-left.is-visible {
+  transform: translate(0, -50%);
+  opacity: 1;
+}
+
+.puppet-stage-right.is-visible {
+  transform: translate(0, -50%);
+  opacity: 1;
+}
+
+.puppet-stage-toggle {
+  position: fixed;
+  z-index: 1200;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+  border: 2px solid #3d291a;
+  border-radius: 9999px;
+  background: #d4a373;
+  color: #2c1a0e;
+  box-shadow: 3px 4px 0 #3d291a;
+  font-weight: 900;
+  text-transform: uppercase;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.puppet-stage-toggle:hover {
+  background: #fdf6e3;
+}
+
+.puppet-stage-chevron {
+  width: 1.25rem;
+  height: 1.25rem;
+  transform: rotate(-90deg);
+  transition: transform 250ms ease;
+}
+
+.puppet-stage-chevron.is-open {
+  transform: rotate(90deg);
+}
+
+.route-navigation {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.route-navigation::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .puppet-stage-group {
+    top: 50%;
+    flex-direction: column !important;
+    gap: 0.5rem;
+    transform-origin: center;
+  }
+
+  .puppet-stage-left {
+    left: 0.25rem;
+    transform: translate(-120vw, -50%) scale(0.72);
+  }
+
+  .puppet-stage-left.is-visible {
+    transform: translate(0, -50%) scale(0.72);
+  }
+
+  .puppet-stage-right {
+    right: 0.25rem;
+    transform: translate(120vw, -50%) scale(0.72);
+  }
+
+  .puppet-stage-right.is-visible {
+    transform: translate(0, -50%) scale(0.72);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .puppet-stage-group,
+  .puppet-stage-chevron {
+    transition-duration: 0.01ms;
+  }
+
+  .puppet-stage .transition-transform {
+    transition-duration: 0.01ms;
+  }
+}
+
+.rhythm-mobile-controls,
+.rhythm-rotation-gate {
+  display: none;
+}
+
+@media (pointer: coarse) and (max-width: 767px) {
+  .rhythm-mobile-controls {
+    display: flex;
+    width: 100%;
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.5rem 0.25rem max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (pointer: coarse) and (max-width: 767px) and (orientation: portrait) {
+  .rhythm-rotation-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: #3d291a;
+  }
+}
+
+@media (pointer: coarse) and (max-width: 767px) and (orientation: landscape) {
+  .rhythm-game-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 0;
+    max-width: none;
+    padding: max(0.35rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right)) max(0.35rem, env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left));
+    background: #3d291a;
+  }
+}
+
+@media (max-height: 500px) and (max-width: 1024px) {
+  .rhythm-mobile-controls {
+    display: flex;
+    width: 100%;
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.35rem 0.25rem max(0.35rem, env(safe-area-inset-bottom));
+  }
+
+  .rhythm-mobile-controls button {
+    min-width: 0;
+    min-height: 2.75rem;
+    flex: 1 1 0;
+  }
+
+  .rhythm-game-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 0;
+    max-width: none;
+    padding: max(0.25rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right)) max(0.25rem, env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left));
+    background: #3d291a;
+  }
+}
+
 @keyframes alternate-heartbeat {
   0%, 100% {
     opacity: 0.72;

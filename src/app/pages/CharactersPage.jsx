@@ -8,6 +8,7 @@ const emptyImageSlots = [null, null, null, null];
 export function CharactersPage({ collectedShardIds = [], onCollectShard, imageLibrary = [] }) {
   const [activeCategory, setActiveCategory] = useState('principal');
   const [selectedFichas, setSelectedFichas] = useState({});
+  const [selectedImages, setSelectedImages] = useState({});
   const [failedImages, setFailedImages] = useState({});
 
   const filteredCharacters = allCharacters.filter(
@@ -73,13 +74,18 @@ export function CharactersPage({ collectedShardIds = [], onCollectShard, imageLi
               ...(currentFicha.images || []),
               ...(!libraryImage?.url && !currentFicha.images?.length ? emptyImageSlots : []),
             ];
+            const imageSelectionKey = `${char.id}-${currentFichaIndex}`;
+            const currentImageIndex = selectedImages[imageSelectionKey] ?? 0;
+            const currentImage = images[currentImageIndex] ?? images[0];
+            const currentImageSrc = typeof currentImage === 'string' ? currentImage : currentImage?.src;
+            const currentImageKey = `${char.id}-${currentFichaIndex}-${currentImageIndex}`;
 
             return (
               <div
                 key={char.id}
-                className="grid grid-cols-1 gap-5 rounded-lg border-2 border-[#553c2a] bg-[#2a2118] p-4 shadow-[4px_4px_0px_#1a1412] md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:p-5"
+                className="relative grid grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] items-start gap-3 rounded-lg border-2 border-[#553c2a] bg-[#2a2118] p-2 shadow-[4px_4px_0px_#1a1412] md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:gap-5 md:p-5"
               >
-                <header className="col-span-full flex flex-col gap-3 border-b border-[#553c2a] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <header className="col-span-full flex flex-col gap-3 border-b border-[#553c2a] pb-4 pr-16 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h2 className="break-words text-xl font-black uppercase text-[#e5be82]">
@@ -106,29 +112,86 @@ export function CharactersPage({ collectedShardIds = [], onCollectShard, imageLi
                   </div>
 
                   {char.fichas.length > 1 && (
-                    <div className="flex flex-wrap gap-1.5" aria-label={`Versiones de ${char.name}`}>
+                    <div className="absolute right-2 top-2 flex gap-1.5 md:right-4 md:top-4" aria-label={`Versiones de ${char.name}`}>
                       {char.fichas.map((ficha, index) => (
                         <button
                           key={ficha.versionLabel}
                           type="button"
                           aria-pressed={currentFichaIndex === index}
+                          aria-label={`${ficha.versionLabel} de ${char.name}`}
+                          title={ficha.versionLabel}
                           onClick={() => handleFichaChange(char.id, index)}
-                          className={`rounded border px-2.5 py-1.5 text-[10px] font-extrabold uppercase transition-colors ${
+                          className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#fdf6e3] ${
                             currentFichaIndex === index
-                              ? 'border-[#e5be82] bg-[#e5be82] text-[#3d291a]'
-                              : 'border-[#553c2a] text-[#c2a68c] hover:border-[#e5be82] hover:text-[#fdf6e3]'
+                              ? 'border-[#e5be82] bg-[#e5be82] text-[#3d291a] shadow-[2px_2px_0px_rgba(0,0,0,0.35)]'
+                              : 'border-[#9a704c] bg-[#2a2118] text-[#c2a68c] hover:border-[#e5be82] hover:text-[#fdf6e3]'
                           }`}
                         >
-                          {ficha.versionLabel}
+                          {index + 1}
                         </button>
                       ))}
                     </div>
                   )}
                 </header>
 
-                <section aria-label={`Imágenes de ${char.name}`}>
+                <section className="min-w-0" aria-label={`Imágenes de ${char.name}`}>
                   <h3 className="mb-2 text-[10px] font-black uppercase text-[#d4a373]">Imágenes</h3>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="relative md:hidden">
+                    <figure className="relative aspect-[3/4] overflow-hidden rounded border border-[#553c2a] bg-[#33271e]">
+                      {currentImageSrc && !failedImages[currentImageKey] ? (
+                        <img
+                          src={currentImageSrc}
+                          alt={typeof currentImage === 'object' ? currentImage.alt || `${char.name} ${currentImageIndex + 1}` : `${char.name} ${currentImageIndex + 1}`}
+                          onError={() => setFailedImages((previous) => ({ ...previous, [currentImageKey]: true }))}
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="absolute inset-0 flex flex-col items-center justify-center border border-dashed border-[#9a704c]/70 text-[#d4a373]"
+                          style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent 0 12px, rgba(212, 163, 115, 0.06) 12px 13px)' }}
+                        >
+                          <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-[#d4a373]/70 text-xl font-light">+</span>
+                          <span className="text-center text-[8px] font-bold uppercase">
+                            Imagen {String(currentImageIndex + 1).padStart(2, '0')}
+                          </span>
+                        </div>
+                      )}
+                    </figure>
+                    {images.length > 1 && (
+                      <div className="mt-1.5 flex items-center justify-between gap-1">
+                        <button
+                          type="button"
+                          aria-label={`Imagen anterior de ${char.name}`}
+                          onClick={() => setSelectedImages((previous) => ({
+                            ...previous,
+                            [imageSelectionKey]: (currentImageIndex - 1 + images.length) % images.length,
+                          }))}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#9a704c] text-[#fdf6e3] hover:bg-[#553c2a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5be82]"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                            <path d="m12.5 4-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                        <span className="text-[9px] font-bold text-[#c2a68c]">
+                          {currentImageIndex + 1} / {images.length}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Siguiente imagen de ${char.name}`}
+                          onClick={() => setSelectedImages((previous) => ({
+                            ...previous,
+                            [imageSelectionKey]: (currentImageIndex + 1) % images.length,
+                          }))}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#9a704c] text-[#fdf6e3] hover:bg-[#553c2a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5be82]"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-4 w-4">
+                            <path d="m7.5 4 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="hidden grid-cols-2 gap-2 md:grid">
                     {images.map((image, imageIndex) => {
                       const imageSrc = typeof image === 'string' ? image : image?.src;
                       const imageKey = `${char.id}-${currentFichaIndex}-${imageIndex}`;
@@ -158,8 +221,8 @@ export function CharactersPage({ collectedShardIds = [], onCollectShard, imageLi
                   </div>
                 </section>
 
-                <section className="min-w-0 space-y-4" aria-label={`Información de ${char.name}`}>
-                  <dl className="grid grid-cols-1 gap-x-4 gap-y-3 text-xs sm:grid-cols-2">
+                <section className="min-w-0 space-y-3 md:space-y-4" aria-label={`Información de ${char.name}`}>
+                  <dl className="grid grid-cols-1 gap-x-3 gap-y-2 text-[10px] sm:text-xs md:grid-cols-2 md:gap-x-4 md:gap-y-3">
                     {[
                       ['Rol / Clase', currentFicha.role],
                       ['Edad', currentFicha.age],
@@ -167,27 +230,32 @@ export function CharactersPage({ collectedShardIds = [], onCollectShard, imageLi
                       ['Cabello / Rasgos', currentFicha.hair],
                       ['Armamento', currentFicha.weapon],
                     ].map(([label, value]) => (
-                      <div key={label} className="border-b border-[#553c2a] pb-2">
-                        <dt className="mb-1 text-[9px] font-black uppercase text-[#e5be82]">{label}</dt>
+                      <div key={label} className="border-b border-[#553c2a] pb-1.5 md:pb-2">
+                        <dt className="mb-1 text-[8px] font-black uppercase text-[#e5be82] md:text-[9px]">{label}</dt>
                         <dd className="text-[#fdf6e3]">{value || 'Sin datos'}</dd>
                       </div>
                     ))}
                   </dl>
+                </section>
 
+                <section
+                  className="col-span-full space-y-3 border-t border-[#553c2a] pt-3 md:col-span-1 md:col-start-2 md:space-y-4"
+                  aria-label={`Detalles adicionales de ${char.name}`}
+                >
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <h3 className="mb-1 text-[9px] font-black uppercase text-[#e5be82]">Gustos</h3>
-                      <p className="text-xs leading-relaxed text-[#d8c3b0]">{currentFicha.likes || 'Sin datos'}</p>
+                      <h3 className="mb-1 text-[8px] font-black uppercase text-[#e5be82] md:text-[9px]">Gustos</h3>
+                      <p className="text-[10px] leading-relaxed text-[#d8c3b0] md:text-xs">{currentFicha.likes || 'Sin datos'}</p>
                     </div>
                     <div>
-                      <h3 className="mb-1 text-[9px] font-black uppercase text-[#c77a6d]">Disgustos</h3>
-                      <p className="text-xs leading-relaxed text-[#d8c3b0]">{currentFicha.dislikes || 'Sin datos'}</p>
+                      <h3 className="mb-1 text-[8px] font-black uppercase text-[#c77a6d] md:text-[9px]">Disgustos</h3>
+                      <p className="text-[10px] leading-relaxed text-[#d8c3b0] md:text-xs">{currentFicha.dislikes || 'Sin datos'}</p>
                     </div>
                   </div>
 
                   <div className="border-t border-[#553c2a] pt-3">
-                    <h3 className="mb-1 text-[9px] font-black uppercase text-[#e5be82]">Descripción</h3>
-                    <p className="text-xs leading-relaxed text-[#d8c3b0]">{currentFicha.desc || 'Sin descripción.'}</p>
+                    <h3 className="mb-1 text-[8px] font-black uppercase text-[#e5be82] md:text-[9px]">Descripción</h3>
+                    <p className="text-[10px] leading-relaxed text-[#d8c3b0] md:text-xs">{currentFicha.desc || 'Sin descripción.'}</p>
                   </div>
                 </section>
               </div>

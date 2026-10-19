@@ -36,11 +36,75 @@ export function RhythmGameView({ onBack, collectedShardIds = [], onCollectShard 
   const isComplete = hasStarted && activeNotes.length > 0 && activeNotes.every((note) => note.hit || note.missed);
   const canCollectReward = isComplete && rewardShardId && !collectedShardIds.includes(rewardShardId);
   const displayFeedback = isComplete ? '¡COMPÁS COMPLETO!' : feedback;
+  const [orientationNotice, setOrientationNotice] = useState('');
+
+  const enterLandscapeMode = () => {
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+
+    setOrientationNotice('');
+    const orientation = window.screen.orientation;
+    const lockOrientation = () => {
+      if (typeof orientation?.lock !== 'function') {
+        setOrientationNotice('Gira el teléfono para jugar en horizontal.');
+        return;
+      }
+
+      orientation.lock('landscape').catch(() => {
+        setOrientationNotice('Gira el teléfono manualmente para jugar en horizontal.');
+      });
+    };
+
+    if (document.fullscreenElement) {
+      lockOrientation();
+      return;
+    }
+
+    if (typeof document.documentElement.requestFullscreen !== 'function') {
+      setOrientationNotice('Gira el teléfono manualmente para jugar en horizontal.');
+      lockOrientation();
+      return;
+    }
+
+    document.documentElement.requestFullscreen()
+      .then(lockOrientation)
+      .catch(() => {
+        setOrientationNotice('No se pudo activar la pantalla completa. Gira el teléfono para continuar.');
+      });
+  };
+
+  const hitLane = (laneIndex) => {
+    if (!isPlaying || startTimeRef.current === null) return;
+
+    const elapsed = performance.now() - startTimeRef.current;
+    const candidate = activeNotesRef.current
+      .filter((note) => note.lane === laneIndex && !note.hit && !note.missed)
+      .map((note) => ({ note, diff: Math.abs(elapsed - note.time) }))
+      .filter(({ diff }) => diff < 150)
+      .sort((first, second) => first.diff - second.diff)[0];
+
+    if (!candidate) return;
+
+    const updatedNotes = activeNotesRef.current.map((note) => (
+      note.id === candidate.note.id ? { ...note, hit: true } : note
+    ));
+    activeNotesRef.current = updatedNotes;
+    setActiveNotes(updatedNotes);
+
+    if (candidate.diff < 60) {
+      setScore((current) => current + 300);
+      setFeedback('PERFECT!');
+    } else {
+      setScore((current) => current + 100);
+      setFeedback('GOOD');
+    }
+    setCombo((current) => current + 1);
+  };
 
   // Iniciar / Reiniciar juego
   const startGame = (level = selectedLevel) => {
     if (!level) return;
 
+    enterLandscapeMode();
     setSelectedLevelId(level.id);
     const startingNotes = level.beatmap.map((note) => ({ ...note, hit: false, missed: false }));
     activeNotesRef.current = startingNotes;
@@ -59,9 +123,25 @@ export function RhythmGameView({ onBack, collectedShardIds = [], onCollectShard 
     setActiveNotes([]);
     setHasStarted(false);
     setFeedback('');
+    setOrientationNotice('');
     setPressedLanes([false, false, false, false]);
     setSelectedLevelId(null);
+    window.screen.orientation?.unlock?.();
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch((error) => {
+        console.warn('Could not exit fullscreen after leaving the rhythm game.', error);
+      });
+    }
   };
+
+  useEffect(() => () => {
+    window.screen.orientation?.unlock?.();
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch((error) => {
+        console.warn('Could not exit fullscreen after leaving the rhythm game.', error);
+      });
+    }
+  }, []);
 
   // Main game loop; notes travel from right to left across the track.
   useEffect(() => {
@@ -107,32 +187,8 @@ export function RhythmGameView({ onBack, collectedShardIds = [], onCollectShard 
       e.preventDefault();
       if (e.repeat) return;
 
-      // Efecto visual de tecla presionada
       setPressedLanes((current) => current.map((pressed, index) => index === laneIndex || pressed));
-
-      const elapsed = performance.now() - startTimeRef.current;
-      const candidate = activeNotesRef.current
-        .filter((note) => note.lane === laneIndex && !note.hit && !note.missed)
-        .map((note) => ({ note, diff: Math.abs(elapsed - note.time) }))
-        .filter(({ diff }) => diff < 150)
-        .sort((first, second) => first.diff - second.diff)[0];
-
-      if (!candidate) return;
-
-      const updatedNotes = activeNotesRef.current.map((note) => (
-        note.id === candidate.note.id ? { ...note, hit: true } : note
-      ));
-      activeNotesRef.current = updatedNotes;
-      setActiveNotes(updatedNotes);
-
-      if (candidate.diff < 60) {
-        setScore((current) => current + 300);
-        setFeedback('PERFECT!');
-      } else {
-        setScore((current) => current + 100);
-        setFeedback('GOOD');
-      }
-      setCombo((current) => current + 1);
+      hitLane(laneIndex);
     };
 
     const handleKeyUp = (e) => {
@@ -196,7 +252,7 @@ export function RhythmGameView({ onBack, collectedShardIds = [], onCollectShard 
   }
 
   return (
-    <div className="relative mx-auto flex h-[min(68vh,540px)] min-h-[320px] w-full max-w-4xl flex-col items-center z-10">
+    <div className="rhythm-game-shell relative z-10 mx-auto flex h-[min(68vh,540px)] min-h-[320px] w-full max-w-4xl flex-col items-center">
       <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl border-4 border-[#3d291a] bg-[#fefae0] p-2 shadow-[6px_6px_0px_rgba(0,0,0,0.5)] sm:rounded-3xl sm:border-8 sm:p-3">
         <div className="flex h-9 shrink-0 items-center justify-between gap-2 px-1 text-[#3d291a] sm:h-10 sm:px-2">
           {onBack ? (
@@ -310,6 +366,35 @@ export function RhythmGameView({ onBack, collectedShardIds = [], onCollectShard 
               </svg>
             </button>
           )}
+        </div>
+
+        <div className="rhythm-mobile-controls" aria-label="Controles táctiles">
+          {LANES.map((lane, index) => (
+            <button
+              key={lane.code}
+              type="button"
+              aria-label={`Dirección ${lane.label}`}
+              disabled={!isPlaying}
+              onClick={() => hitLane(index)}
+              onPointerDown={() => setPressedLanes((current) => current.map((pressed, laneIndex) => laneIndex === index || pressed))}
+              onPointerUp={() => setPressedLanes((current) => current.map((pressed, laneIndex) => laneIndex === index ? false : pressed))}
+              onPointerCancel={() => setPressedLanes((current) => current.map((pressed, laneIndex) => laneIndex === index ? false : pressed))}
+              className={`flex h-14 flex-1 touch-manipulation items-center justify-center rounded-xl border-2 border-[#3d291a] text-2xl font-black shadow-[3px_3px_0px_#3d291a] disabled:opacity-50 ${
+                pressedLanes[index] ? 'bg-[#3d291a] text-[#fdf6e3]' : 'bg-[#d4a373] text-[#3d291a]'
+              }`}
+            >
+              {lane.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rhythm-rotation-gate" role="status">
+        <div className="max-w-xs rounded-2xl border-4 border-[#3d291a] bg-[#fdf6e3] p-6 text-center text-[#3d291a] shadow-[6px_6px_0px_rgba(0,0,0,0.4)]">
+          <p className="text-4xl" aria-hidden="true">↻</p>
+          <h2 className="mt-3 text-lg font-black uppercase">Gira tu teléfono</h2>
+          <p className="mt-2 text-sm">El juego está diseñado para jugarse en horizontal y a pantalla completa.</p>
+          {orientationNotice && <p className="mt-3 text-xs font-bold text-[#8b3a24]">{orientationNotice}</p>}
         </div>
       </div>
     </div>
