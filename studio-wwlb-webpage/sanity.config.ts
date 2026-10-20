@@ -6,6 +6,7 @@ import {schemaTypes} from './schemaTypes'
 export default defineConfig({
   name: 'default',
   title: 'wwlb webpage',
+  basePath: '/studio',
 
   projectId: 'vru32lc4',
   dataset: 'production',

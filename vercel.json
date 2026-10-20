@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "app": {
+      "root": ".",
+      "framework": "nextjs"
+    },
+    "studio-wwlb-webpage": {
+      "root": "studio-wwlb-webpage",
+      "framework": "sanity"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/studio",
+      "destination": {
+        "service": "studio-wwlb-webpage"
+      }
+    },
+    {
+      "source": "/studio/(.*)",
+      "destination": {
+        "service": "studio-wwlb-webpage"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "app"
+      }
+    }
+  ]
+}
