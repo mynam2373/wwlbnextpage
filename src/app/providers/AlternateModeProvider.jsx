@@ -79,7 +79,8 @@ export function AlternateModeProvider({ children, devSessionId }) {
     hasLoadedProgress,
     collectShard,
     collectAllShards,
-    isUnlocked: hasLoadedProgress && collectedShardIds.length === HEART_SHARDS.length,
+    isUnlocked: hasLoadedProgress
+      && (collectedShardIds.length === 0 || collectedShardIds.length === HEART_SHARDS.length),
     finishAlternateMode,
   }), [
     collectedShardIds,
