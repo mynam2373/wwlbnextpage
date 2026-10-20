@@ -171,6 +171,10 @@
   display: none;
 }
 
+img[data-global-image-zoom] {
+  cursor: zoom-in;
+}
+
 @media (pointer: coarse) and (max-width: 767px) {
   .rhythm-mobile-controls {
     display: flex;

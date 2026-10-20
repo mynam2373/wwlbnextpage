@@ -23,7 +23,7 @@ function MailImage({ image, label }) {
   if (!url) return null;
 
   return (
-    <a href={url} target="_blank" rel="noreferrer" className="mt-3 block max-w-full overflow-hidden rounded-xl border border-[#3d291a]/20">
+    <a href={url} target="_blank" rel="noreferrer" data-image-zoom className="mt-3 block max-w-full overflow-hidden rounded-xl border border-[#3d291a]/20">
       <Image
         src={url}
         alt={image.alt || label}

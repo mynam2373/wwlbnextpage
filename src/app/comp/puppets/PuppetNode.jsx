@@ -88,7 +88,7 @@ export function PuppetNode({ name, role, imageName, side = 'left', isActive }) {
               src={imageSrc.src}
               alt={name}
               onError={() => setImageFailed(true)}
-              className="w-20 h-20 object-contain relative z-10 drop-shadow-[2px_3px_0px_rgba(0,0,0,0.3)] pointer-events-none"
+              className="w-20 h-20 object-contain relative z-10 drop-shadow-[2px_3px_0px_rgba(0,0,0,0.3)] pointer-events-auto cursor-zoom-in"
             />
           )}
         </div>
