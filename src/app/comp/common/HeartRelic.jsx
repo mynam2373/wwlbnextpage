@@ -88,7 +88,7 @@ export function HeartRelic({
           viewBox="0 0 200 190"
           role="group"
           aria-label={`Corazón: ${collectedIds.size} de ${HEART_SHARDS.length} fragmentos recuperados`}
-          className="h-8 w-8 overflow-visible"
+          className="h-11 w-11 overflow-visible md:h-8 md:w-8"
         >
           <defs>
             <clipPath id="heart-relic-shape">
@@ -148,7 +148,7 @@ export function HeartRelic({
             onClick={onUnlockClick}
             aria-label="Abrir el Locket y continuar"
             title="El Locket está completo. Haz clic para ir a Inicio o entrar al modo alternativo."
-            className="absolute inset-0 z-20 cursor-pointer rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f04452]"
+            className="absolute inset-0 z-20 cursor-pointer touch-manipulation rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f04452]"
             style={{ animation: 'heart-relic-pulse 1.1s ease-in-out infinite' }}
           />
         )}
