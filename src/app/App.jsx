@@ -16,6 +16,7 @@ import { HEART_SHARDS } from './data/heartShards';
 import { useAlternateMode } from './providers/AlternateModeProvider';
 
 const SECRET_WORD = 'elizabeth';
+const ALTERNATE_MODE_ENTRY_KEY = 'wwlb-alternate-mode-entry';
 
 export default function App({
   initialTab = 'inicio',
@@ -158,6 +159,7 @@ export default function App({
       return;
     }
 
+    window.sessionStorage.setItem(ALTERNATE_MODE_ENTRY_KEY, 'true');
     router.push('/alternate');
   };
 
