@@ -157,7 +157,7 @@ export function SyncedPoem({ poem, title, fragmentNumber, onPlaybackChange }) {
         <div
           aria-live="polite"
           aria-label="Subtítulos sincronizados"
-          className={`relative order-3 h-72 overflow-hidden text-left text-lg font-semibold leading-relaxed sm:text-xl md:order-none md:col-start-1 md:row-start-2 md:pl-5 ${
+          className={`relative order-3 h-72 overflow-hidden text-center text-lg font-semibold leading-relaxed sm:text-xl md:order-none md:col-start-1 md:row-start-2 ${
             isRevealed ? 'opacity-100' : 'opacity-0'
           } transition-opacity duration-700`}
           style={{
@@ -183,7 +183,7 @@ export function SyncedPoem({ poem, title, fragmentNumber, onPlaybackChange }) {
               {verses.map((verse, index) => (
                 <p
                   key={index}
-                  className="flex h-[4.5rem] w-full items-center pr-2 text-white"
+                  className="flex h-[4.5rem] w-full items-center justify-center px-2 text-center text-white"
                 >
                   {verse}
                 </p>
